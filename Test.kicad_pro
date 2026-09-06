@@ -529,7 +529,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "Test.kicad_pro",
+    "filename": "test.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -1060,18 +1060,18 @@
     "subpart_id_separator": 0,
     "top_level_sheets": [
       {
-        "filename": "Test.kicad_sch",
-        "name": "Test",
+        "filename": "test.kicad_sch",
+        "name": "test",
         "uuid": "f9e05184-c88b-4a88-ae9c-ab2bdb32be7c"
       }
     ],
-    "used_designators": "U1",
+    "used_designators": "U1,RN1",
     "variants": []
   },
   "sheets": [
     [
       "f9e05184-c88b-4a88-ae9c-ab2bdb32be7c",
-      "Test"
+      "test"
     ],
     [
       "82da9dbf-ba38-4d08-ba35-a220fa2963b1",
@@ -1100,21 +1100,21 @@
   ],
   "text_variables": {
     "ASSEMBLY_NOTES": "ASSEMBLY NOTES",
-    "BOARD_NAME": "Test",
-    "COMPANY": "Cat Company",
-    "DESIGNER": "Ozzie",
+    "BOARD_NAME": "Board Name",
+    "COMPANY": "Company",
+    "DESIGNER": "Author",
     "FABRICATION_NOTES": "FABRICATION NOTES",
     "GIT_HASH_PCB": "",
     "GIT_HASH_SCH": "",
     "GIT_URL": "",
-    "PROJECT_NAME": "Test Test",
+    "PROJECT_NAME": "Project Name",
     "RELEASE_BODY_1.0.0": "",
     "RELEASE_BODY_1.0.1": "",
     "RELEASE_BODY_1.0.2": "",
     "RELEASE_BODY_1.1.0": "",
     "RELEASE_BODY_UNRELEASED": "",
-    "RELEASE_DATE": "03-03-2004",
-    "RELEASE_DATE_NUM": "03-03-2026",
+    "RELEASE_DATE": "DD-MMM-YYYY",
+    "RELEASE_DATE_NUM": "YYYY-MM-DD",
     "RELEASE_TITLE_1.0.0": "",
     "RELEASE_TITLE_1.0.1": "",
     "RELEASE_TITLE_1.0.2": "",

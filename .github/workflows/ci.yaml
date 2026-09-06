@@ -14,8 +14,7 @@ on:
 env:
   kibot_config: kibot_yaml/kibot_main.yaml
   # Used variant. This only affects which components are shown/hidden (DNP)
-  # in the 3D render and STEP export. ERC and DRC always run, regardless of
-  # variant, and will fail the pipeline if errors are found.
+  # in the 3D render, STEP export, and ERC/DRC checks.
   # DRAFT: only schematic in progress
   # PRELIMINARY: PCB layout in progress
   # CHECKED: schematic and PCB finalized
@@ -31,6 +30,10 @@ permissions:
   contents: write
 
 jobs:
+  # Runs on its own runner: generates the PCB renders (injected into the
+  # .kicad_sch and README.md) and the STEP 3D export, then commits/pushes
+  # them. ERC/DRC do NOT run here, so this job always completes and commits
+  # its outputs regardless of the verify_erc_drc job's result.
   generate_outputs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'Merge pull request') || github.ref_type == 'tag'"
@@ -51,13 +54,11 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: echo "kibot_variant=RELEASED" >> $GITHUB_ENV
 
-      # Generate the PCB renders (injected into the .kicad_sch and README.md),
-      # the STEP 3D export, and run ERC/DRC (fail the pipeline on error)
-      - name: Generate outputs (KiCad ${{ env.kicad_version }})
+      - name: Generate renders, STEP export and README (KiCad ${{ env.kicad_version }})
         uses: jenseng/dynamic-uses@v1
         with:
           uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
-          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "additional_args": "--log ${{ env.kibot_log }} all_group", "cache3D": "YES" }'
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "skip": "erc,drc", "targets": "all_group", "additional_args": "--log ${{ env.kibot_log }}", "cache3D": "YES" }'
 
       - name: Pull latest changes
         run: |
@@ -103,3 +104,32 @@ jobs:
         with:
           name: log_file
           path: ${{ env.kibot_log }}
+
+  # Runs on its own runner, in parallel with generate_outputs. Only runs
+  # ERC/DRC (no outputs, nothing is committed) and fails the pipeline if
+  # either check reports errors.
+  verify_erc_drc:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'Merge pull request') || github.ref_type == 'tag'"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Override variant to RELEASED for tag pushes
+        if: ${{ github.ref_type == 'tag' }}
+        run: echo "kibot_variant=RELEASED" >> $GITHUB_ENV
+
+      - name: Run ERC/DRC (KiCad ${{ env.kicad_version }})
+        uses: jenseng/dynamic-uses@v1
+        with:
+          uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "targets": "__NONE__", "additional_args": "--log ${{ env.kibot_log }}" }'
+
+      - name: Store ERC/DRC reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: erc_drc_reports
+          path: |
+            Reports/
+            ${{ env.kibot_log }}
