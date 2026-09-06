@@ -58,7 +58,7 @@ jobs:
         uses: jenseng/dynamic-uses@v1
         with:
           uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
-          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "skip": "erc,drc", "targets": "all_group", "additional_args": "--log ${{ env.kibot_log }}", "cache3D": "YES" }'
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "skip": "erc,drc", "additional_args": "--log ${{ env.kibot_log }} all_group", "cache3D": "YES" }'
 
       - name: Pull latest changes
         run: |
@@ -123,7 +123,7 @@ jobs:
         uses: jenseng/dynamic-uses@v1
         with:
           uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
-          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "targets": "__NONE__", "additional_args": "--log ${{ env.kibot_log }}" }'
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "additional_args": "--log ${{ env.kibot_log }} __NONE__" }'
 
       - name: Store ERC/DRC reports
         if: ${{ always() }}
