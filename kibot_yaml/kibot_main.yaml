@@ -1,0 +1,198 @@
+# KiBot configuration file for KDT_Hierarchical Template
+# KiCad 10
+
+kibot:
+  version: 1
+
+variants:
+
+  # Project variants
+  # These only affect which components are shown/hidden (DNP) in the 3D
+  # render and STEP export. ERC and DRC always run, regardless of variant.
+
+  - name: 'DRAFT'
+    comment: "Very early stage of schematic, ignore details."
+    type: kibom
+    variant: DRAFT
+    exclude_filter: '_null'
+
+  - name: 'PRELIMINARY'
+    comment: "Close to final schematic."
+    type: kibom
+    variant: PRELIMINARY
+    exclude_filter: '_null'
+
+  - name: 'CHECKED'
+    comment: "There shouldn't be any mistakes. Contact the engineer if you find any."
+    type: kibom
+    variant: CHECKED
+    exclude_filter: '_null'
+
+  - name: 'RELEASED'
+    comment: "A board with this schematic has been sent to production."
+    type: kibom
+    variant: RELEASED
+    exclude_filter: '_null'
+
+groups:
+
+  - name: all_group
+    outputs:
+      - 3d
+      - 3d_render
+      - @MD_README_OUTPUT@
+
+  - name: 3d_render
+    outputs:
+      - @PNG_3D_VIEWER_TOP@
+      - @PNG_3D_VIEWER_BOTTOM@
+      - @PNG_3D_VIEWER_ANGLED_TOP@
+      - @PNG_3D_VIEWER_ANGLED_BOTTOM@
+
+  - name: 3d
+    outputs:
+      - @STEP_OUTPUT@
+
+import:
+
+  # Global parameters ==========================================================
+
+  - file: kibot_globals.yaml
+    definitions:
+      OUTPUT_DIR: @OUTPUT_DIR@
+      LAYER_DNP_TOP: @LAYER_DNP_TOP@
+      LAYER_DNP_BOTTOM: @LAYER_DNP_BOTTOM@
+
+  # Preflights =================================================================
+
+  # Generate ERC Report. Fails the pipeline if errors are found.
+  - file: kibot_pre_erc_report.yaml
+    definitions:
+      DIR: @REPORT_DIR@
+
+  # Generate DRC Report. Fails the pipeline if errors are found.
+  - file: kibot_pre_drc_report.yaml
+    definitions:
+      CHECK_ZONE_FILLS: @CHECK_ZONE_FILLS@
+      DIR: @REPORT_DIR@
+
+# Generated outputs ============================================================
+
+  # PNG 3D Viewer renders ------------------------------------------------------
+  # The "top" and "bottom" renders are injected directly into the dedicated
+  # text box groups (named kibot_image_<output name>) inside the .kicad_sch
+  # file. All four renders are also exported as standalone PNG files and the
+  # top/bottom pair is embedded in the generated README.md.
+  - file: kibot_out_png_3d_viewer.yaml
+    definitions:
+      NAME: @PNG_3D_VIEWER_TOP@
+      COMMENT: Top 3D viewer PCB render in PNG format
+      DIR: @IMAGES_DIR@
+      SUFFIX: top
+      VIEW: top
+      KEY_COLOR: '@KEY_COLOR@'
+
+  - file: kibot_out_png_3d_viewer.yaml
+    definitions:
+      NAME: @PNG_3D_VIEWER_BOTTOM@
+      COMMENT: Bottom 3D viewer PCB render in PNG format
+      DIR: @IMAGES_DIR@
+      SUFFIX: bottom
+      VIEW: bottom
+      KEY_COLOR: '@KEY_COLOR@'
+
+  - file: kibot_out_png_3d_viewer.yaml
+    definitions:
+      NAME: @PNG_3D_VIEWER_ANGLED_TOP@
+      COMMENT: Top (angled) 3D viewer PCB render in PNG format
+      DIR: @IMAGES_DIR@
+      SUFFIX: angled_top
+      VIEW: top
+      ROTATE_X: @3D_VIEWER_ROT_X@
+      ROTATE_Y: @3D_VIEWER_ROT_Y@
+      ROTATE_Z: @3D_VIEWER_ROT_Z@
+      ZOOM: @3D_VIEWER_ZOOM@
+      KEY_COLOR: '@KEY_COLOR@'
+
+  - file: kibot_out_png_3d_viewer.yaml
+    definitions:
+      NAME: @PNG_3D_VIEWER_ANGLED_BOTTOM@
+      COMMENT: Bottom (angled) 3D viewer PCB render in PNG format
+      DIR: @IMAGES_DIR@
+      SUFFIX: angled_bottom
+      VIEW: bottom
+      ROTATE_X: @3D_VIEWER_ROT_X@
+      ROTATE_Y: @3D_VIEWER_ROT_Y@
+      ROTATE_Z: -@3D_VIEWER_ROT_Z@
+      ZOOM: @3D_VIEWER_ZOOM@
+      KEY_COLOR: '@KEY_COLOR@'
+
+  # STEP file ------------------------------------------------------------------
+  - file: kibot_out_step.yaml
+    definitions:
+      NAME: @STEP_OUTPUT@
+      COMMENT: PCB 3D model in STEP format
+      DIR: @3D_DIR@
+
+  # README.md file generation --------------------------------------------------
+  - file: kibot_out_md_report.yaml
+    definitions:
+      NAME: @MD_README_OUTPUT@
+      COMMENT: README file in Markdown format
+      DIR: @OUTPUT_DIR@
+      CATEGORY: '.'
+      OUTPUT_NAME: README
+      TEMPLATE: @REPORT_TEMPLATE_DIR@/readme.txt
+
+# ==============================================================================
+
+...
+definitions:
+
+  # Metadata ===================================================================
+
+  PROJECT_NAME: Project Name
+  BOARD_NAME: Board Name
+
+  LOGO: 'Logos/dummy_logo.png'
+  GIT_URL: 'https://github.com/nguyen-v/KDT_Hierarchical_KiBot'
+
+  # Preflight ==================================================================
+
+  CHECK_ZONE_FILLS: false
+
+  # 3D Viewer rotations (in steps) =============================================
+
+  3D_VIEWER_ROT_X: 2
+  3D_VIEWER_ROT_Y: -1
+  3D_VIEWER_ROT_Z: 1
+  3D_VIEWER_ZOOM: -1
+  KEY_COLOR: '#00FF00' # Background color to remove. Use a color different from your PCB
+
+  # Output directories =========================================================
+
+  # Root
+  OUTPUT_DIR: ./
+
+  # Relative to root
+  REPORT_DIR: Reports
+  IMAGES_DIR: Images
+  3D_DIR: 3D
+  RESOURCES_DIR: kibot_resources
+  REPORT_TEMPLATE_DIR: '@RESOURCES_DIR@/templates'
+
+  # Layer names. Should match user-defined names in the PCB.  ==================
+
+  LAYER_DNP_TOP: F.DNP
+  LAYER_DNP_BOTTOM: B.DNP
+
+  # Output names  ===============================================================
+
+  PNG_3D_VIEWER_TOP: png_3d_viewer_top
+  PNG_3D_VIEWER_BOTTOM: png_3d_viewer_bottom
+  PNG_3D_VIEWER_ANGLED_TOP: png_3d_viewer_angled_top
+  PNG_3D_VIEWER_ANGLED_BOTTOM: png_3d_viewer_angled_bottom
+
+  STEP_OUTPUT: step
+
+  MD_README_OUTPUT: md_readme

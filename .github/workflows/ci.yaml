@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+' # Match semantic versioning tags
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - '*.md'
+
+env:
+  kibot_config: kibot_yaml/kibot_main.yaml
+  # Used variant. This only affects which components are shown/hidden (DNP)
+  # in the 3D render and STEP export. ERC and DRC always run, regardless of
+  # variant, and will fail the pipeline if errors are found.
+  # DRAFT: only schematic in progress
+  # PRELIMINARY: PCB layout in progress
+  # CHECKED: schematic and PCB finalized
+  # RELEASED: same as CHECKED, automatically selected when pushing a tag to main
+  kibot_variant: DRAFT
+
+  # Set the KiCad version to 10
+  kicad_version: 10
+
+  kibot_log: kibot_run.log
+
+permissions:
+  contents: write
+
+jobs:
+  generate_outputs:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'Merge pull request') || github.ref_type == 'tag'"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache 3D models data
+        id: models-cache
+        uses: set-soft/cache@main
+        with:
+          path: ~/cache_3d
+          key: cache_3d
+
+      - name: Override variant to RELEASED for tag pushes
+        if: ${{ github.ref_type == 'tag' }}
+        run: echo "kibot_variant=RELEASED" >> $GITHUB_ENV
+
+      # Generate the PCB renders (injected into the .kicad_sch and README.md),
+      # the STEP 3D export, and run ERC/DRC (fail the pipeline on error)
+      - name: Generate outputs (KiCad ${{ env.kicad_version }})
+        uses: jenseng/dynamic-uses@v1
+        with:
+          uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "additional_args": "--log ${{ env.kibot_log }} all_group", "cache3D": "YES" }'
+
+      - name: Pull latest changes
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "Triggered by a tag, committing changes in detached HEAD state"
+            git add -A
+            git commit -m "Update Outputs (release)"
+
+            DETACHED_COMMIT=$(git rev-parse HEAD)
+            echo "Checking out the main branch"
+            git fetch origin main
+            git checkout main
+
+            echo "Merging detached HEAD commit into main"
+            git merge --no-ff $DETACHED_COMMIT -m "Merge outputs from tag-triggered workflow" -X theirs
+            echo "Pushing to main branch"
+            git push origin main
+          else
+            echo "Triggered by a branch, using the current branch"
+            git pull origin ${{ github.ref_name }} --tags --force
+          fi
+
+      - name: Discard changes to .kicad_pcb files and remove temp files
+        run: |
+          git checkout HEAD -- $(git ls-files "*.kicad_pcb")
+          git clean -f "*.kicad_pcb"
+          git clean -f "*.kicad_pro"
+          git clean -f "*.kicad_dru"
+          git clean -f "*.kicad_prl"
+
+      - name: Update Outputs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          branch: ${{ github.ref_name }}
+          commit_message: Update Outputs
+
+      - name: Store log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: log_file
+          path: ${{ env.kibot_log }}
