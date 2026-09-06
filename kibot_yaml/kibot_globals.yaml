@@ -25,16 +25,10 @@ global:
     - number: 98
     # 'Avoid adding extra information in the component value, use separated fields'
     - number: 133
-    # 'This output depends on KiCad version, use blender_export instead'
-    - number: 143
-    # 'Not including component <ref> in filters because it has a malformed reference'
-    - number: 147
     # 'No output to handle <output>'
     - number: 168
     # 'Please only use simple data types for definitions'
     - number: 172
-    # Can't enable <distributor> without a key
-    - number: 1008
 
 ...
 definitions:

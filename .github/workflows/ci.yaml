@@ -11,13 +11,18 @@ on:
     paths-ignore:
       - '*.md'
 
+# NOTE: the "all_group" target and skip/variant handling below are mirrored
+# in kibot_launch.sh for local runs — keep both in sync when either changes.
 env:
   kibot_config: kibot_yaml/kibot_main.yaml
-  # Used variant. This only affects which components are shown/hidden (DNP)
-  # in the 3D render, STEP export, and ERC/DRC checks.
-  # DRAFT: only schematic in progress
-  # PRELIMINARY: PCB layout in progress
-  # CHECKED: schematic and PCB finalized
+  # Used variant. Besides which components are shown/hidden (DNP) in the 3D
+  # render and STEP export, this also determines which of ERC/DRC are
+  # "applicable" yet and get run by the verify_erc_drc job below (see the
+  # "Determine which checks are applicable" step, and README.md's
+  # "PROJECT STAGES" section for the full picture / how to change this):
+  # DRAFT: only schematic in progress -- neither ERC nor DRC run yet
+  # PRELIMINARY: schematic complete, PCB layout in progress -- ERC runs, DRC does not
+  # CHECKED: schematic and PCB finalized -- both ERC and DRC run
   # RELEASED: same as CHECKED, automatically selected when pushing a tag to main
   kibot_variant: DRAFT
 
@@ -59,6 +64,17 @@ jobs:
         with:
           uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
           with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "skip": "erc,drc", "additional_args": "--log ${{ env.kibot_log }} all_group", "cache3D": "YES" }'
+
+      # Permanently embeds the top/bottom renders into the .kicad_sch cover
+      # page (KiBot's own kibot_image_* mechanism only pastes into printed
+      # schematic outputs, which this template doesn't generate -- see
+      # kibot_resources/scripts/embed_render_images.py for details).
+      # continue-on-error: a failure here (e.g. a future KiCad/KiBot render
+      # naming change) shows up as a warning on this run instead of blocking
+      # the renders/STEP/README from being committed below.
+      - name: Embed PCB renders into schematic cover page
+        continue-on-error: true
+        run: python3 kibot_resources/scripts/embed_render_images.py
 
       - name: Pull latest changes
         run: |
@@ -106,8 +122,9 @@ jobs:
           path: ${{ env.kibot_log }}
 
   # Runs on its own runner, in parallel with generate_outputs. Only runs
-  # ERC/DRC (no outputs, nothing is committed) and fails the pipeline if
-  # either check reports errors.
+  # whichever of ERC/DRC is applicable for the current project stage (see the
+  # step below) -- no outputs, nothing is committed -- and fails the pipeline
+  # if a check that DID run reports errors.
   verify_erc_drc:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'Merge pull request') || github.ref_type == 'tag'"
@@ -119,11 +136,28 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         run: echo "kibot_variant=RELEASED" >> $GITHUB_ENV
 
-      - name: Run ERC/DRC (KiCad ${{ env.kicad_version }})
+      # Project-stage gate: change this if your team wants a different
+      # ERC/DRC policy per stage (also update kibot_launch.sh to match, and
+      # the table in README.md's "PROJECT STAGES" section).
+      - name: Determine which checks are applicable for this stage
+        run: |
+          case "${{ env.kibot_variant }}" in
+            DRAFT)
+              echo "erc_drc_skip=erc,drc" >> $GITHUB_ENV
+              ;;
+            PRELIMINARY)
+              echo "erc_drc_skip=drc" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "erc_drc_skip=__NONE__" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Run applicable checks (KiCad ${{ env.kicad_version }})
         uses: jenseng/dynamic-uses@v1
         with:
           uses: INTI-CMNB/KiBot@v2_dk${{ env.kicad_version }}
-          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "additional_args": "--log ${{ env.kibot_log }} __NONE__" }'
+          with: '{ "variant": "${{ env.kibot_variant }}", "config": "${{ env.kibot_config }}", "skip": "${{ env.erc_drc_skip }}", "additional_args": "--log ${{ env.kibot_log }} __NONE__" }'
 
       - name: Store ERC/DRC reports
         if: ${{ always() }}

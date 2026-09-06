@@ -1000,13 +1000,9 @@
     ]
   ],
   "text_variables": {
-    "ASSEMBLY_NOTES": "ASSEMBLY NOTES",
     "BOARD_NAME": "Board Name",
     "COMPANY": "Company",
     "DESIGNER": "Author",
-    "FABRICATION_NOTES": "FABRICATION NOTES",
-    "GIT_HASH_PCB": "",
-    "GIT_HASH_SCH": "",
     "GIT_URL": "",
     "PROJECT_NAME": "Project Name",
     "RELEASE_BODY_1.0.0": "",

@@ -37,9 +37,13 @@ function display_help() {
     echo -e "  ./kibot_launch.sh --stop-server          Stop the running HTTP server."
     echo
     echo -e "VARIANT DESCRIPTIONS"
-    echo -e "  The variant only affects which components are shown/hidden (DNP) in the"
-    echo -e "  3D render and STEP export. ERC and DRC always run and will fail the run"
-    echo -e "  if errors are found, regardless of variant."
+    echo -e "  Besides which components are shown/hidden (DNP) in the 3D render and STEP"
+    echo -e "  export, the variant also determines which of ERC/DRC are applicable yet:"
+    echo -e "  DRAFT:        neither ERC nor DRC run"
+    echo -e "  PRELIMINARY:  ERC runs, DRC does not"
+    echo -e "  CHECKED, RELEASED, and any other variant: both ERC and DRC run"
+    echo -e "  A check that DOES run will fail the script if it finds errors."
+    echo -e "  See README.md's \"PROJECT STAGES\" section for the full picture."
     echo -e "  DRAFT, PRELIMINARY, CHECKED, RELEASED: outputs are generated at the project root."
     echo -e "  Other variants: will be saved in the Variants folder."
     exit 0
@@ -124,7 +128,23 @@ case "$variant" in
         ;;
 esac
 
+# Determine which of ERC/DRC are applicable for this variant (project stage).
+# NOTE: keep this in sync with the "Determine which checks are applicable"
+# step in .github/workflows/ci.yaml (verify_erc_drc job), and with the table
+# in README.md's "PROJECT STAGES" section.
+case "$variant" in
+    DRAFT)
+        skip_pre="--skip-pre erc,drc"
+        ;;
+    PRELIMINARY)
+        skip_pre="--skip-pre drc"
+        ;;
+    *)
+        skip_pre=""
+        ;;
+esac
+
 # Execute the command
-kibot_command="$kibot_base $kibot_config -d '$output_dir' -g variant=$variant all_group"
+kibot_command="$kibot_base $kibot_config -d '$output_dir' -g variant=$variant $skip_pre all_group"
 echo -e "${GREEN}Running: $kibot_command${NC}"
 eval $kibot_command

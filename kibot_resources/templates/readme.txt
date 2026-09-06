@@ -1,5 +1,5 @@
 <p align="center" width="100%">
-  <img alt="Logo" width="33%" src="Logos/dummy_logo.svg">
+  <img alt="Logo" width="33%" src="${LOGO}">
 </p>
 
 <h1 align="center">${BOARD_NAME}</h1>
@@ -38,7 +38,6 @@
 
     .
     ├─ 3D                 # STEP 3D model export
-    ├─ Computations       # Misc calculations
     ├─ Images             # Pictures and renders
     │
     ├─ kibot_resources    # External resources for KiBot
@@ -48,12 +47,6 @@
     │  └─ templates       # Templates for KiBot generated reports
     │
     ├─ kibot_yaml         # KiBot YAML config files
-    │
-    ├─ lib                # KiCad footprint and symbol libraries
-    │  ├─ 3d_models       # Component 3D models
-    │  ├─ lib_fp          # Footprint libraries
-    │  └─ lib_sym         # Symbol libraries
-    │
     ├─ Logos              # Logos
     ├─ Reports            # Reports for ERC/DRC
     ├─ Templates          # Title block templates

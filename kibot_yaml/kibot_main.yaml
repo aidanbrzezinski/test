@@ -7,8 +7,10 @@ kibot:
 variants:
 
   # Project variants
-  # These only affect which components are shown/hidden (DNP) in the 3D
-  # render and STEP export. ERC and DRC always run, regardless of variant.
+  # These control which components are shown/hidden (DNP) in the 3D render
+  # and STEP export. They also gate which of ERC/DRC are applicable yet --
+  # see the CI workflow (.github/workflows/ci.yaml) and kibot_launch.sh for
+  # that logic, and README.md's "PROJECT STAGES" section for the full plan.
 
   - name: 'DRAFT'
     comment: "Very early stage of schematic, ignore details."
@@ -79,10 +81,14 @@ import:
 # Generated outputs ============================================================
 
   # PNG 3D Viewer renders ------------------------------------------------------
-  # The "top" and "bottom" renders are injected directly into the dedicated
-  # text box groups (named kibot_image_<output name>) inside the .kicad_sch
-  # file. All four renders are also exported as standalone PNG files and the
-  # top/bottom pair is embedded in the generated README.md.
+  # All four renders are exported as standalone PNG files in Images/, and the
+  # top/bottom pair is embedded in the generated README.md. The .kicad_sch
+  # cover page's kibot_image_png_3d_viewer_top/bottom placeholders are NOT
+  # filled in by KiBot itself (that mechanism only pastes into a schematic
+  # print/export output, which this template doesn't generate) -- instead,
+  # the CI workflow runs kibot_resources/scripts/embed_render_images.py right
+  # after this output to permanently embed the top/bottom renders. See
+  # README.md ("Adding the PCB Render to the Schematic Cover Page").
   - file: kibot_out_png_3d_viewer.yaml
     definitions:
       NAME: @PNG_3D_VIEWER_TOP@
@@ -151,11 +157,11 @@ definitions:
 
   # Metadata ===================================================================
 
-  PROJECT_NAME: Project Name
-  BOARD_NAME: Board Name
+  PROJECT_NAME: Test    
+  BOARD_NAME: Test Test
 
-  LOGO: 'Logos/dummy_logo.png'
-  GIT_URL: 'https://github.com/nguyen-v/KDT_Hierarchical_KiBot'
+  LOGO: 'Logos/SAE Electric Logo.png'
+  GIT_URL: 'https://github.com/BDMPowertrain/KiCad_10_Template'
 
   # Preflight ==================================================================
 
